@@ -159,6 +159,14 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
 
         if (!text) return;
 
+        // Ignore URL preview messages (Lark automatically sends these)
+        // These messages typically contain only URLs without user input
+        const urlOnlyPattern = /^https?:\/\/[^\s]+$/;
+        if (urlOnlyPattern.test(text)) {
+            console.log('Ignoring URL-only message (likely preview)');
+            return;
+        }
+
         // 1. Check conversation state
         const state = await getConversationStateByChatId(chatId);
 
