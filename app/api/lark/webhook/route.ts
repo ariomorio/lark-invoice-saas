@@ -12,13 +12,12 @@ import { sendTextMessage, downloadImage } from '@/lib/lark';
 import { startConversationCleanup } from '@/lib/conversation-timeout';
 import {
     createConversationState,
-    getConversationState,
-    updateConversationState,
+    getConversationStateByChatId,
     deleteConversationState
 } from '@/lib/conversation-state';
 import { extractInvoiceFromText, extractInvoiceFromImage, extractInvoiceFromAudio, InvoiceData } from '@/lib/gemini';
 import { createInvoiceDraft } from '@/lib/invoice';
-import { getIssuerInfo } from '@/lib/issuer-patterns';
+import { getIssuerPattern } from '@/lib/issuer-patterns';
 
 // Cache for processed event IDs and message IDs
 const processedEvents = new Set<string>();
@@ -161,19 +160,19 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
         if (!text) return;
 
         // 1. Check conversation state
-        const state = await getConversationState(chatId);
+        const state = await getConversationStateByChatId(chatId);
 
         if (state && state.state === 'awaiting_issuer_selection') {
             // Check user input for issuer selection
             const selection = text.trim();
-            let patternIndex = -1;
+            let selectedPattern = 0;
 
-            if (selection === '1' || selection === '1.') patternIndex = 0;
-            if (selection === '2' || selection === '2.') patternIndex = 1;
+            if (selection === '1' || selection === '1.') selectedPattern = 1;
+            if (selection === '2' || selection === '2.') selectedPattern = 2;
 
-            if (patternIndex !== -1) {
+            if (selectedPattern !== 0) {
                 // Valid selection
-                const issuer = getIssuerInfo(patternIndex);
+                const issuer = getIssuerPattern(selectedPattern);
                 let invoiceData: InvoiceData;
 
                 try {
@@ -188,14 +187,26 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
                 // Create Invoice Draft
                 await sendTextMessage(chatId, `「${issuer.name}」として請求書を作成中...`);
 
-                const invoiceId = await createInvoiceDraft(invoiceData, chatId, messageId, issuer);
+                // Merge issuer info into invoice data
+                const finalInvoiceData = {
+                    ...invoiceData,
+                    issuer: {
+                        name: issuer.name,
+                        address: issuer.address,
+                        postalCode: issuer.postalCode,
+                        phone: issuer.phone,
+                        email: issuer.email
+                    }
+                };
+
+                const invoiceId = await createInvoiceDraft(chatId, messageId, finalInvoiceData);
 
                 // Response with Edit URL
                 const editUrl = `${process.env.BETTER_AUTH_URL}/invoice/${invoiceId}`;
                 await sendTextMessage(chatId, `請求書の下書きを作成しました！\n以下のリンクから編集・確認してください：\n${editUrl}`);
 
                 // Clear state
-                await deleteConversationState(chatId);
+                await deleteConversationState(state.id);
             } else {
                 // Invalid selection
                 await sendTextMessage(chatId, '無効な選択です。1 または 2 を入力してください。\nキャンセルする場合は「キャンセル」と入力してください。');
@@ -215,7 +226,7 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
         const invoiceData = await extractInvoiceFromText(text);
 
         // Save state and ask for issuer
-        const issuers = [getIssuerInfo(0), getIssuerInfo(1)];
+        const issuers = [getIssuerPattern(1), getIssuerPattern(2)];
         await createConversationState(chatId, messageId, 'awaiting_issuer_selection', invoiceData);
 
         const messageText = `請求書情報を抽出しました！\n発行者を選択してください（番号を入力）：\n1. ${issuers[0].name} (${issuers[0].company})\n2. ${issuers[1].name} (${issuers[1].company})`;
@@ -244,11 +255,11 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
             return;
         }
 
-        // Analysis
-        const invoiceData = await extractInvoiceFromImage(imageBuffer);
+        // Analysis (Lark images are typically PNG/JPEG)
+        const invoiceData = await extractInvoiceFromImage(imageBuffer, 'image/png');
 
         // Save state and ask for issuer
-        const issuers = [getIssuerInfo(0), getIssuerInfo(1)];
+        const issuers = [getIssuerPattern(1), getIssuerPattern(2)];
         await createConversationState(chatId, messageId, 'awaiting_issuer_selection', invoiceData);
 
         const messageText = `画像を解析しました！\n発行者を選択してください（番号を入力）：\n1. ${issuers[0].name} (${issuers[0].company})\n2. ${issuers[1].name} (${issuers[1].company})`;
@@ -276,11 +287,11 @@ async function handleAudioMessage(chatId: string, messageId: string, message: an
             return;
         }
 
-        // Analysis
-        const invoiceData = await extractInvoiceFromAudio(audioBuffer);
+        // Analysis (Lark audio messages are typically opus/wav)
+        const invoiceData = await extractInvoiceFromAudio(audioBuffer, 'audio/opus');
 
         // Save state and ask for issuer
-        const issuers = [getIssuerInfo(0), getIssuerInfo(1)];
+        const issuers = [getIssuerPattern(1), getIssuerPattern(2)];
         await createConversationState(chatId, messageId, 'awaiting_issuer_selection', invoiceData);
 
         const messageText = `音声を解析しました！\n発行者を選択してください（番号を入力）：\n1. ${issuers[0].name} (${issuers[0].company})\n2. ${issuers[1].name} (${issuers[1].company})`;
