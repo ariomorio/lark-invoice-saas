@@ -81,7 +81,9 @@ export async function POST(request: NextRequest) {
                 // Limit cache size
                 if (processedEvents.size > MAX_CACHE_SIZE) {
                     const firstItem = processedEvents.values().next().value;
-                    processedEvents.delete(firstItem);
+                    if (firstItem) {
+                        processedEvents.delete(firstItem);
+                    }
                 }
             }
 
