@@ -275,20 +275,50 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
  */
 async function handleImageMessage(chatId: string, messageId: string, message: any) {
     try {
-        const imageKey = message.image_key;
-        if (!imageKey) return;
+        console.log('handleImageMessage called with message:', JSON.stringify(message, null, 2));
+
+        // Parse message content to get image_key
+        let imageKey: string | undefined;
+
+        // Try to get image_key from message.content (JSON string)
+        if (message.content) {
+            try {
+                const content = JSON.parse(message.content);
+                imageKey = content.image_key;
+                console.log('Parsed image_key from content:', imageKey);
+            } catch (e) {
+                console.error('Failed to parse message.content:', e);
+            }
+        }
+
+        // Fallback: try direct property access
+        if (!imageKey && message.image_key) {
+            imageKey = message.image_key;
+            console.log('Got image_key from direct property:', imageKey);
+        }
+
+        if (!imageKey) {
+            console.error('No image_key found in message');
+            await sendTextMessage(chatId, '画像キーが見つかりませんでした。');
+            return;
+        }
 
         await sendTextMessage(chatId, '画像を解析中...');
 
         // Download image
-        const imageBuffer = await downloadImage(messageId, imageKey); // Requires messageId now
+        console.log('Downloading image with messageId:', messageId, 'imageKey:', imageKey);
+        const imageBuffer = await downloadImage(messageId, imageKey);
         if (!imageBuffer) {
             await sendTextMessage(chatId, '画像のダウンロードに失敗しました。');
             return;
         }
 
+        console.log('Image downloaded successfully, size:', imageBuffer.length, 'bytes');
+
         // Analysis (Lark images are typically PNG/JPEG)
+        console.log('Starting image analysis with Gemini...');
         const invoiceData = await extractInvoiceFromImage(imageBuffer, 'image/png');
+        console.log('Image analysis complete:', JSON.stringify(invoiceData, null, 2));
 
         // Save state and ask for issuer
         const issuers = [getIssuerPattern(1), getIssuerPattern(2)];
@@ -299,6 +329,7 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
 
     } catch (error: any) {
         console.error('Error in handleImageMessage:', error);
+        console.error('Error stack:', error.stack);
         await sendTextMessage(chatId, `画像の処理中にエラーが発生しました: ${error.message}`);
     }
 }
