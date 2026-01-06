@@ -108,5 +108,5 @@ export async function initializeDatabase() {
     }
 }
 
-// Auto-initialize on import
-initializeDatabase().catch(console.error);
+// Auto-initialize on import - REMOVED for Vercel deployment stability
+// initializeDatabase().catch(console.error);

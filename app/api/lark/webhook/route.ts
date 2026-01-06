@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { sendTextMessage } from '@/lib/lark';
-import '@/lib/init-db'; // Auto-initialize database schema
+// import '@/lib/init-db'; // Removed auto-initialization to prevent Vercel errors
 import { startConversationCleanup } from '@/lib/conversation-timeout';
 
 // 処理済みイベントIDを保存（メモリキャッシュ）
