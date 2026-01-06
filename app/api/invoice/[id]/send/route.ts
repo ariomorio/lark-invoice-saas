@@ -58,7 +58,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Send completion message
         await sendTextMessage(
             invoice.lark_chat_id,
-            `請求書PDFを送信しました！\nファイル名: ${fileName}`,
+            `請求書PDFを送信しました！\nファイル名: ${fileName}\n\n処理を完了します。他の請求書を作成したい場合は再度請求情報を入力してください。`,
             invoice.lark_message_id || undefined
         );
 

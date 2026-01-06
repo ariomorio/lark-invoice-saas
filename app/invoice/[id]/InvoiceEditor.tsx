@@ -278,19 +278,20 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                             className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right"
                         />
                         <input
+                            type="text"
+                            name="issuerPhone"
+                            value={invoiceData.issuerPhone}
+                            onChange={handleInputChange}
+                            placeholder="電話番号"
+                            className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right"
+                        />
+                        <input
                             type="email"
                             name="issuerEmail"
                             value={invoiceData.issuerEmail}
                             onChange={handleInputChange}
+                            placeholder="メールアドレス"
                             className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right"
-                        />
-                        <textarea
-                            name="issuerBankInfo"
-                            value={invoiceData.issuerBankInfo}
-                            onChange={handleInputChange}
-                            placeholder="振込先情報"
-                            rows={2}
-                            className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right resize-none"
                         />
                     </div>
                 </div>
@@ -443,16 +444,30 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                     </div>
                 </div>
 
-                {/* 備考 */}
-                <div className="text-sm">
-                    <h3 className="font-bold border-b border-gray-400 mb-2 pb-1">備考</h3>
-                    <textarea
-                        name="notes"
-                        value={invoiceData.notes}
-                        onChange={handleInputChange}
-                        rows={4}
-                        className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded"
-                    />
+                {/* 備考・振込先 (PC/Mobile共通) */}
+                <div className="grid md:grid-cols-2 gap-8 mt-4">
+                    <div className="space-y-1">
+                        <h3 className="font-bold border-b border-gray-400 mb-2 pb-1 text-sm text-gray-600">備考</h3>
+                        <textarea
+                            name="notes"
+                            value={invoiceData.notes}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="備考事項を入力してください"
+                            className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <h3 className="font-bold border-b border-gray-400 mb-2 pb-1 text-sm text-gray-600">振込先情報</h3>
+                        <textarea
+                            name="issuerBankInfo"
+                            value={invoiceData.issuerBankInfo}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="振込先情報を入力してください"
+                            className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
+                        />
+                    </div>
                 </div>
 
             </div>
