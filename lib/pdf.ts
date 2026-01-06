@@ -304,7 +304,6 @@ export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buff
     if (process.env.VERCEL) {
       const chromium = await import('@sparticuz/chromium');
       launchOptions.args = chromium.default.args;
-      launchOptions.defaultViewport = chromium.default.defaultViewport;
     } else {
       // ローカル環境用の引数
       launchOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
