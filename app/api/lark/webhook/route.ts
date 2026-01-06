@@ -225,6 +225,8 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
                     }
                 };
 
+                console.log('Creating invoice with issuer info:', JSON.stringify(finalInvoiceData.issuer, null, 2));
+
                 const invoiceId = await createInvoiceDraft(chatId, messageId, finalInvoiceData);
 
                 // Response with Edit URL

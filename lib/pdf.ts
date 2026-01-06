@@ -4,8 +4,29 @@
  * This module generates PDF invoices using Puppeteer.
  */
 
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { InvoiceData } from './gemini';
+
+// Vercel環境でchromiumを動的にロード
+async function getChromiumExecutablePath(): Promise<string> {
+  if (process.env.VERCEL) {
+    // Vercel環境
+    const chromium = await import('@sparticuz/chromium');
+    return await chromium.default.executablePath();
+  } else {
+    // ローカル環境 - システムのChromiumを使用
+    // Windowsの場合
+    if (process.platform === 'win32') {
+      return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+    }
+    // Macの場合
+    if (process.platform === 'darwin') {
+      return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    }
+    // Linuxの場合
+    return '/usr/bin/google-chrome';
+  }
+}
 
 /**
  * Format currency for display
@@ -268,15 +289,28 @@ function generateInvoiceHTML(data: InvoiceData): string {
  * @returns PDF buffer
  */
 export async function generateInvoicePDF(invoiceData: InvoiceData): Promise<Buffer> {
-  let browser;
+  let browser = null;
 
   try {
-    // Launch Puppeteer
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const executablePath = await getChromiumExecutablePath();
 
+    // Vercel環境用の設定
+    const launchOptions: any = {
+      executablePath,
+      headless: true,
+    };
+
+    // Vercel環境の場合、追加の引数を設定
+    if (process.env.VERCEL) {
+      const chromium = await import('@sparticuz/chromium');
+      launchOptions.args = chromium.default.args;
+      launchOptions.defaultViewport = chromium.default.defaultViewport;
+    } else {
+      // ローカル環境用の引数
+      launchOptions.args = ['--no-sandbox', '--disable-setuid-sandbox'];
+    }
+
+    browser = await puppeteer.launch(launchOptions);
     const page = await browser.newPage();
 
     // Generate HTML
