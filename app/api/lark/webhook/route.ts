@@ -291,6 +291,18 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
     try {
         console.log('handleImageMessage called with message:', JSON.stringify(message, null, 2));
 
+        // Check if there's already an active conversation state (race condition prevention)
+        const existingState = await getConversationStateByChatId(chatId);
+        if (existingState) {
+            console.log('Ignoring image message - conversation already in progress:', existingState.state);
+            if (existingState.state === 'awaiting_issuer_selection') {
+                await sendTextMessage(chatId, '現在、発行者の選択をお待ちしています。先に選択を完了してください。');
+            } else if (existingState.state === 'processing') {
+                await sendTextMessage(chatId, '現在、画像を処理中です。しばらくお待ちください。');
+            }
+            return;
+        }
+
         // Parse message content to get image_key
         let imageKey: string | undefined;
 
@@ -317,12 +329,18 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
             return;
         }
 
+        // Create processing state BEFORE starting analysis to prevent race conditions
+        await createConversationState(chatId, messageId, 'processing', {});
+        console.log('Created processing state for chat:', chatId);
+
         await sendTextMessage(chatId, '画像を解析中...');
 
         // Download image
         console.log('Downloading image with messageId:', messageId, 'imageKey:', imageKey);
         const imageBuffer = await downloadImage(messageId, imageKey);
         if (!imageBuffer) {
+            const state = await getConversationStateByChatId(chatId);
+            if (state) await deleteConversationState(state.id);
             await sendTextMessage(chatId, '画像のダウンロードに失敗しました。');
             return;
         }
@@ -334,6 +352,12 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
         const invoiceData = await extractInvoiceFromImage(imageBuffer, 'image/png');
         console.log('Image analysis complete:', JSON.stringify(invoiceData, null, 2));
 
+        // Update state from processing to awaiting_issuer_selection
+        const processingState = await getConversationStateByChatId(chatId);
+        if (processingState) {
+            await deleteConversationState(processingState.id);
+        }
+
         // Save state and ask for issuer
         const issuers = [getIssuerPattern(1), getIssuerPattern(2)];
         await createConversationState(chatId, messageId, 'awaiting_issuer_selection', invoiceData);
@@ -344,6 +368,13 @@ async function handleImageMessage(chatId: string, messageId: string, message: an
     } catch (error: any) {
         console.error('Error in handleImageMessage:', error);
         console.error('Error stack:', error.stack);
+
+        // Clean up processing state on error
+        const state = await getConversationStateByChatId(chatId);
+        if (state) {
+            await deleteConversationState(state.id);
+        }
+
         await sendTextMessage(chatId, `画像の処理中にエラーが発生しました: ${error.message}`);
     }
 }
