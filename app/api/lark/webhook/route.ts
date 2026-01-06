@@ -96,9 +96,17 @@ export async function POST(request: NextRequest) {
 
             // Dispatch Event
             if (eventType === 'im.message.receive_v1') {
+                const event = body.event;
+                const senderType = event.sender && event.sender.sender_type;
+
+                // Ignore messages from non-user senders (e.g., bot itself)
+                if (senderType !== 'user') {
+                    console.log(`Ignoring message from non-user sender type: ${senderType}`);
+                    return NextResponse.json({ status: 'ok', message: 'skipped_non_user_message' });
+                }
+
                 // Background execution to return status ok quickly (?)
                 // Vercel serverless has a limit, but we await here to ensure execution.
-                // In a robust system, this would push to a queue.
                 await handleMessageReceived(body.event);
             }
         }
