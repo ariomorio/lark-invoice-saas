@@ -171,14 +171,72 @@ export async function extractInvoiceFromText(text: string): Promise<InvoiceData>
 
     // Extract JSON from response
     const generatedText = data.candidates[0].content.parts[0].text;
-    const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+
+    // Remove markdown code blocks if present
+    let cleanedText = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+    let jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
 
     if (!jsonMatch) {
+        console.error('Failed to extract JSON. Generated text:', generatedText);
         throw new Error('Failed to extract JSON from Gemini response');
     }
 
-    const invoiceData = JSON.parse(jsonMatch[0]);
-    return invoiceData as InvoiceData;
+    let jsonString = jsonMatch[0];
+
+    // Try to parse JSON with multiple fallback strategies
+    const parseStrategies = [
+        // Strategy 1: Parse as-is
+        () => JSON.parse(jsonString),
+
+        // Strategy 2: Remove trailing commas
+        () => JSON.parse(jsonString.replace(/,([\s]*[}\]])/g, '$1')),
+
+        // Strategy 3: Fix unterminated strings and add missing brackets
+        () => {
+            let fixed = jsonString
+                .replace(/,([\s]*[}\]])/g, '$1') // Remove trailing commas
+                .replace(/"([^"]*?)$/gm, '"$1"'); // Fix unterminated strings
+
+            // Add missing closing brackets
+            const openBraces = (fixed.match(/\{/g) || []).length;
+            const closeBraces = (fixed.match(/\}/g) || []).length;
+            const openBrackets = (fixed.match(/\[/g) || []).length;
+            const closeBrackets = (fixed.match(/\]/g) || []).length;
+
+            for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                fixed += ']';
+            }
+            for (let i = 0; i < openBraces - closeBraces; i++) {
+                fixed += '}';
+            }
+
+            return JSON.parse(fixed);
+        },
+    ];
+
+    for (let i = 0; i < parseStrategies.length; i++) {
+        try {
+            const invoiceData = parseStrategies[i]();
+            if (i > 0) {
+                console.log(`JSON parsed successfully using strategy ${i + 1}`);
+            }
+            return invoiceData as InvoiceData;
+        } catch (error) {
+            if (i === parseStrategies.length - 1) {
+                // All strategies failed
+                console.error('JSON parse error:', error);
+                console.error('Attempted to parse:', jsonString);
+                console.error('Full generated text:', generatedText);
+                throw new Error(`Failed to parse JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+            // Try next strategy
+            continue;
+        }
+    }
+
+    // This should never be reached
+    throw new Error('Failed to parse JSON with all strategies');
 }
 
 /**
