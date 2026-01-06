@@ -31,34 +31,32 @@ if (!cleanupInterval) {
  */
 export async function POST(request: NextRequest) {
     try {
+        // Get raw body
+        const rawBody = await request.text();
+
+        // Parse JSON
+        let body;
         try {
-            // Get raw body
-            const rawBody = await request.text();
-
-            // Parse JSON
-            let body;
-            try {
-                body = JSON.parse(rawBody);
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                return NextResponse.json(
-                    { error: 'Invalid JSON' },
-                    { status: 400 }
-                );
-            }
-
-            // Handle URL verification challenge (v1.0) - FAST PATH
-            // 最優先で処理し、ログ出力などのオーバーヘッドを避ける
-            if (body.type === 'url_verification') {
-                return NextResponse.json({
-                    challenge: body.challenge,
-                });
-            }
-
-            // Log incoming request after verification check
-            console.log('Webhook received:', request.method, request.url);
-            console.log('Parsed body:', JSON.stringify(body, null, 2));
+            body = JSON.parse(rawBody);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            return NextResponse.json(
+                { error: 'Invalid JSON' },
+                { status: 400 }
+            );
         }
+
+        // Handle URL verification challenge (v1.0) - FAST PATH
+        // 最優先で処理し、ログ出力などのオーバーヘッドを避ける
+        if (body.type === 'url_verification') {
+            return NextResponse.json({
+                challenge: body.challenge,
+            });
+        }
+
+        // Log incoming request after verification check
+        console.log('Webhook received:', request.method, request.url);
+        console.log('Parsed body:', JSON.stringify(body, null, 2));
 
         // Handle Lark API v2.0 events
         if (body.schema === '2.0' && body.header) {
