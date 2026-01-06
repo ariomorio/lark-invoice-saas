@@ -211,6 +211,7 @@ function generateInvoiceHTML(data: InvoiceData): string {
         ${data.issuer.address ? `<div>${data.issuer.address}</div>` : ''}
         ${data.issuer.phone ? `<div>TEL: ${data.issuer.phone}</div>` : ''}
         ${data.issuer.email ? `<div>Email: ${data.issuer.email}</div>` : ''}
+        ${data.issuer.bankInfo ? `<div style="margin-top: 8px; white-space: pre-line;">${data.issuer.bankInfo}</div>` : ''}
       </div>
     </div>
     

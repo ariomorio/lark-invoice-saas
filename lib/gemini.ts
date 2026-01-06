@@ -41,6 +41,7 @@ export interface InvoiceData {
         postalCode?: string;
         phone?: string;
         email?: string;
+        bankInfo?: string;
     };
 
     // 品目リスト
@@ -101,7 +102,8 @@ const getInvoiceExtractionPrompt = () => {
     "address": "",
     "postalCode": "",
     "phone": "",
-    "email": ""
+    "email": "",
+    "bankInfo": ""
   },
   "items": [
     {

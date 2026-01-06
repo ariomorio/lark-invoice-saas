@@ -195,7 +195,8 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
                         address: issuer.address,
                         postalCode: issuer.postalCode,
                         phone: issuer.phone,
-                        email: issuer.email
+                        email: issuer.email,
+                        bankInfo: issuer.bankInfo
                     }
                 };
 
