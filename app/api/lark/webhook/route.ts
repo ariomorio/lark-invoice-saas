@@ -145,8 +145,22 @@ async function handleMessageReceived(event: any) {
         if (messageType === 'text') {
             await handleTextMessage(chatId, messageId, message);
         } else if (messageType === 'image') {
+            // Check if there's already an active conversation state
+            const existingState = await getConversationStateByChatId(chatId);
+            if (existingState && existingState.state === 'awaiting_issuer_selection') {
+                console.log('Ignoring image message - already awaiting issuer selection');
+                await sendTextMessage(chatId, '現在、発行者の選択をお待ちしています。先に選択を完了してください。');
+                return;
+            }
             await handleImageMessage(chatId, messageId, message);
         } else if (messageType === 'audio') {
+            // Check if there's already an active conversation state
+            const existingState = await getConversationStateByChatId(chatId);
+            if (existingState && existingState.state === 'awaiting_issuer_selection') {
+                console.log('Ignoring audio message - already awaiting issuer selection');
+                await sendTextMessage(chatId, '現在、発行者の選択をお待ちしています。先に選択を完了してください。');
+                return;
+            }
             await handleAudioMessage(chatId, messageId, message);
         }
     } catch (error) {
