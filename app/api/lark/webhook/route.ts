@@ -267,7 +267,21 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
             return;
         }
 
-        // 2. No active state, start new extraction flow
+        // 2. No active state - check if user wants to create an invoice
+        // Only process if the message contains invoice-related keywords
+        const hasInvoiceKeywords =
+            text.includes('請求') ||
+            text.includes('見積') ||
+            text.includes('invoice') ||
+            text.includes('bill') ||
+            text.length > 20; // Or if it's a longer message (likely invoice details)
+
+        if (!hasInvoiceKeywords) {
+            console.log('Ignoring text message without invoice keywords and no active state');
+            return;
+        }
+
+        // Start new extraction flow
         await sendTextMessage(chatId, 'テキストから請求書情報を抽出しています...');
         const invoiceData = await extractInvoiceFromText(text);
 
