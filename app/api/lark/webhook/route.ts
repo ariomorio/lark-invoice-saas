@@ -181,6 +181,13 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
         const state = await getConversationStateByChatId(chatId);
 
         if (state && state.state === 'awaiting_issuer_selection') {
+            // Handle cancellation FIRST (before checking selection)
+            if (text.includes('キャンセル') || text.toLowerCase() === 'cancel') {
+                await sendTextMessage(chatId, '処理をキャンセルしました。');
+                await deleteConversationState(state.id);
+                return;
+            }
+
             // Check user input for issuer selection
             const selection = text.trim();
             let selectedPattern = 0;
@@ -198,7 +205,7 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
                 } catch (e) {
                     console.error('Failed to parse saved invoice data', e);
                     await sendTextMessage(chatId, 'エラー: 保存されたデータの読み込みに失敗しました。もう一度はじめからやり直してください。');
-                    await deleteConversationState(chatId);
+                    await deleteConversationState(state.id);
                     return;
                 }
 
@@ -230,12 +237,6 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
                 // Invalid selection
                 await sendTextMessage(chatId, '無効な選択です。1 または 2 を入力してください。\nキャンセルする場合は「キャンセル」と入力してください。');
                 // State remains
-            }
-
-            // Handle cancellation
-            if (text.includes('キャンセル') || text.toLowerCase() === 'cancel') {
-                await sendTextMessage(chatId, '処理をキャンセルしました。');
-                await deleteConversationState(chatId);
             }
             return;
         }
