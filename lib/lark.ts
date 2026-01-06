@@ -168,7 +168,7 @@ export async function uploadFile(
     const formData = new FormData();
     formData.append('file_type', fileType);
     formData.append('file_name', fileName);
-    formData.append('file', new Blob([file]), fileName);
+    formData.append('file', new Blob([new Uint8Array(file)]), fileName);
 
     const response = await fetch(`${LARK_API_BASE}/im/v1/files`, {
         method: 'POST',
