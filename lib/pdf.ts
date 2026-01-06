@@ -55,6 +55,9 @@ function generateInvoiceHTML(data: InvoiceData): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>請求書</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
     @page {
       size: A4;
@@ -232,7 +235,6 @@ function generateInvoiceHTML(data: InvoiceData): string {
         ${data.issuer.address ? `<div>${data.issuer.address}</div>` : ''}
         ${data.issuer.phone ? `<div>TEL: ${data.issuer.phone}</div>` : ''}
         ${data.issuer.email ? `<div>Email: ${data.issuer.email}</div>` : ''}
-        ${data.issuer.bankInfo ? `<div style="margin-top: 8px; white-space: pre-line;">${data.issuer.bankInfo}</div>` : ''}
       </div>
     </div>
     
@@ -270,16 +272,15 @@ function generateInvoiceHTML(data: InvoiceData): string {
     </div>
     
     <!-- Notes -->
-    ${data.notes ? `
     <div class="notes">
       <div class="notes-title">備考</div>
-      <div>${data.notes.replace(/\n/g, '<br>')}</div>
+      ${data.issuer.bankInfo ? `<div style="white-space: pre-line; margin-bottom: 8px;">${data.issuer.bankInfo}</div>` : ''}
+      ${data.notes ? `<div style="white-space: pre-line;">${data.notes}</div>` : ''}
     </div>
-    ` : ''}
-  </div>
-</body>
-</html>
-  `;
+</div>
+  </body>
+  </html>
+    `;
 }
 
 /**
