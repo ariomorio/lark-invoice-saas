@@ -1,0 +1,416 @@
+import React, { useState } from 'react';
+import { Plus, Trash2, Printer, ChevronDown, ChevronUp } from 'lucide-react';
+
+// 日本の通貨フォーマット
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(amount);
+};
+
+const InvoiceApp = () => {
+  // 請求書データ（初期値）
+  const [invoiceData, setInvoiceData] = useState({
+    title: '御請求書',
+    date: new Date().toISOString().split('T')[0],
+    invoiceNumber: 'INV-2024-001',
+    recipientName: '株式会社 サンプル',
+    recipientDept: '',
+    senderName: '山田商事 株式会社',
+    senderAddress: '〒100-0005 東京都千代田区丸の内1-1-1',
+    senderPhone: '03-1234-5678',
+    registrationNumber: 'T1234567890123',
+    paymentDeadline: '2024-01-31',
+    bankInfo: '〇〇銀行 本店 普通 1234567 ヤマダショウジ',
+    notes: '振込手数料は貴社にてご負担願います。',
+    taxRate: 10,
+  });
+
+  // 明細データ
+  const [items, setItems] = useState([
+    { id: 1, description: 'Webサイト制作費', quantity: 1, price: 150000 },
+    { id: 2, description: 'サーバー初期設定費', quantity: 1, price: 30000 },
+  ]);
+
+  // 計算ロジック
+  const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const taxAmount = Math.floor(subtotal * (invoiceData.taxRate / 100));
+  const totalAmount = subtotal + taxAmount;
+
+  // 入力ハンドラ
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setInvoiceData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // アイテム操作
+  const handleItemChange = (id, field, value) => {
+    setItems(items.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const addItem = () => {
+    const newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
+    setItems([...items, { id: newId, description: '', quantity: 1, price: 0 }]);
+  };
+
+  const removeItem = (id) => {
+    setItems(items.filter(item => item.id !== id));
+  };
+
+  // 印刷ハンドラ
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 py-4 px-2 md:py-8 md:px-4 font-sans text-gray-800">
+      
+      {/* --- コントロールパネル --- */}
+      <div className="w-full md:max-w-[210mm] mx-auto mb-4 flex flex-col md:flex-row justify-between items-center gap-4 print:hidden">
+        <h1 className="text-lg md:text-xl font-bold text-gray-700">請求書作成ツール</h1>
+        <button 
+          onClick={handlePrint}
+          className="w-full md:w-auto flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow transition-colors font-bold"
+        >
+          <Printer size={20} />
+          印刷 / PDF保存
+        </button>
+      </div>
+
+      {/* --- 請求書用紙エリア ---
+        スマホ(画面): パディング小、幅100%、フレックス縦並び多用
+        PC(画面): A4幅、パディング大
+        印刷: 強制的にA4スタイル適用
+      */}
+      <div className="
+        w-full md:max-w-[210mm] mx-auto 
+        bg-white shadow-lg md:shadow-xl 
+        p-4 md:p-10 
+        min-h-[297mm] 
+        print:p-0 print:shadow-none print:w-[210mm] print:max-w-none print:mx-0
+      ">
+        
+        {/* ヘッダー: タイトルとNo/日付 */}
+        <div className="flex flex-col md:flex-row print:flex-row justify-between items-start md:items-end border-b-2 border-gray-800 pb-4 mb-8 gap-4">
+          <input
+            type="text"
+            name="title"
+            value={invoiceData.title}
+            onChange={handleInputChange}
+            className="text-3xl md:text-4xl font-bold w-full md:w-64 bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-gray-800 text-center md:text-left print:text-left"
+          />
+          <div className="w-full md:w-auto text-right text-sm space-y-2 md:space-y-1">
+            <div className="flex items-center justify-between md:justify-end gap-2">
+              <span className="font-semibold text-gray-600">No.</span>
+              <input
+                type="text"
+                name="invoiceNumber"
+                value={invoiceData.invoiceNumber}
+                onChange={handleInputChange}
+                className="text-right w-32 border-b border-gray-300 hover:border-blue-400 focus:border-blue-600 outline-none bg-transparent"
+              />
+            </div>
+            <div className="flex items-center justify-between md:justify-end gap-2">
+              <span className="font-semibold text-gray-600">発行日:</span>
+              <input
+                type="date"
+                name="date"
+                value={invoiceData.date}
+                onChange={handleInputChange}
+                className="text-right w-32 border-b border-gray-300 hover:border-blue-400 focus:border-blue-600 outline-none bg-transparent font-mono"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 宛名と差出人エリア */}
+        <div className="flex flex-col md:flex-row print:flex-row justify-between gap-8 mb-8 md:mb-12">
+          
+          {/* 左側: 宛名 (スマホでは上に表示) */}
+          <div className="flex-1 space-y-2">
+            <div className="border-b border-gray-800 pb-1">
+              <input
+                type="text"
+                name="recipientName"
+                value={invoiceData.recipientName}
+                onChange={handleInputChange}
+                placeholder="顧客名を入力"
+                className="text-xl md:text-2xl font-bold w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+               <input
+                type="text"
+                name="recipientDept"
+                value={invoiceData.recipientDept}
+                onChange={handleInputChange}
+                placeholder="部署名・担当者名 (任意)"
+                className="text-base md:text-lg w-full border-b border-dashed border-gray-300 hover:border-blue-400 focus:border-blue-600 outline-none bg-transparent"
+              />
+              <span className="text-lg whitespace-nowrap">御中</span>
+            </div>
+            
+            {/* 請求金額ボックス */}
+            <div className="mt-6 md:mt-8 p-4 bg-gray-50 rounded border border-gray-200 print:bg-transparent print:border-gray-800">
+              <div className="flex justify-between items-baseline border-b border-gray-400 pb-2 mb-2">
+                <span className="text-sm font-semibold text-gray-600">ご請求金額 (税込)</span>
+                <span className="text-2xl md:text-3xl font-bold">{formatCurrency(totalAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 text-sm">
+                 <span className="font-semibold text-gray-600">お支払期限:</span>
+                 <input
+                  type="date"
+                  name="paymentDeadline"
+                  value={invoiceData.paymentDeadline}
+                  onChange={handleInputChange}
+                  className="bg-transparent border-b border-gray-300 outline-none text-right"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 右側: 差出人 (スマホでは下に表示) */}
+          <div className="flex-1 text-left md:text-right print:text-right space-y-1 mt-4 md:mt-0">
+             <input
+                type="text"
+                name="senderName"
+                value={invoiceData.senderName}
+                onChange={handleInputChange}
+                className="text-lg md:text-xl font-bold w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right print:text-right"
+              />
+             <input
+                type="text"
+                name="senderAddress"
+                value={invoiceData.senderAddress}
+                onChange={handleInputChange}
+                className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right print:text-right"
+              />
+             <input
+                type="text"
+                name="senderPhone"
+                value={invoiceData.senderPhone}
+                onChange={handleInputChange}
+                className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right print:text-right"
+              />
+             <div className="flex items-center justify-start md:justify-end print:justify-end gap-2 mt-2">
+               <span className="text-sm text-gray-600">登録番号:</span>
+               <input
+                  type="text"
+                  name="registrationNumber"
+                  value={invoiceData.registrationNumber}
+                  onChange={handleInputChange}
+                  placeholder="T0000000000000"
+                  className="text-sm w-40 border-b border-gray-300 hover:border-blue-400 focus:border-blue-600 outline-none bg-transparent text-left md:text-right print:text-right"
+                />
+             </div>
+             {/* 印鑑スペース */}
+             <div className="flex justify-end mt-4">
+                <div className="w-16 h-16 md:w-20 md:h-20 border border-gray-300 rounded flex items-center justify-center text-gray-300 text-xs select-none print:border-red-300 print:text-red-300">
+                  (印)
+                </div>
+             </div>
+          </div>
+        </div>
+
+        {/* 明細エリア:
+          スマホ(画面) -> カード型リスト表示 (編集しやすい)
+          PC/印刷 -> テーブル表示 (一覧性が高い)
+        */}
+        
+        {/* --- モバイル用 明細カード (PC/印刷では非表示) --- */}
+        <div className="md:hidden print:hidden space-y-4 mb-8">
+          <h3 className="font-bold text-gray-700 border-b pb-1">明細入力</h3>
+          {items.map((item) => (
+            <div key={item.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm relative">
+              <button 
+                onClick={() => removeItem(item.id)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 p-2"
+              >
+                <Trash2 size={18} />
+              </button>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">品名</label>
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                    placeholder="品名を入力"
+                    className="w-full bg-white p-2 rounded border border-gray-300 outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div className="w-1/3">
+                    <label className="text-xs text-gray-500 block mb-1">数量</label>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value))}
+                      className="w-full bg-white p-2 rounded border border-gray-300 outline-none focus:border-blue-500 text-center"
+                    />
+                  </div>
+                  <div className="w-2/3">
+                    <label className="text-xs text-gray-500 block mb-1">単価</label>
+                    <input
+                      type="number"
+                      value={item.price}
+                      onChange={(e) => handleItemChange(item.id, 'price', Number(e.target.value))}
+                      className="w-full bg-white p-2 rounded border border-gray-300 outline-none focus:border-blue-500 text-right"
+                    />
+                  </div>
+                </div>
+                <div className="text-right pt-2 border-t border-gray-200">
+                  <span className="text-xs text-gray-500 mr-2">小計:</span>
+                  <span className="font-bold">{formatCurrency(item.price * item.quantity)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+          <button 
+            onClick={addItem}
+            className="w-full py-3 flex items-center justify-center gap-2 border-2 border-dashed border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+          >
+            <Plus size={18} />
+            明細を追加
+          </button>
+        </div>
+
+        {/* --- デスクトップ/印刷用 明細テーブル (モバイル画面では非表示) --- */}
+        <div className="hidden md:block print:table w-full">
+          <table className="w-full mb-8 border-collapse">
+            <thead>
+              <tr className="bg-gray-800 text-white print:bg-gray-200 print:text-black">
+                <th className="p-2 text-left w-[45%] rounded-l">品名 / 明細</th>
+                <th className="p-2 text-center w-[15%]">数量</th>
+                <th className="p-2 text-right w-[20%]">単価</th>
+                <th className="p-2 text-right w-[20%] rounded-r">金額</th>
+                <th className="p-2 w-10 print:hidden"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.id} className="border-b border-gray-200 group">
+                  <td className="p-2">
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                      placeholder="品名を入力"
+                      className="w-full bg-transparent outline-none border-b border-transparent hover:border-blue-300 focus:border-blue-500 transition-colors"
+                    />
+                  </td>
+                  <td className="p-2 text-center">
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleItemChange(item.id, 'quantity', Number(e.target.value))}
+                      className="w-full text-center bg-transparent outline-none border-b border-transparent hover:border-blue-300 focus:border-blue-500 transition-colors"
+                    />
+                  </td>
+                  <td className="p-2 text-right">
+                    <div className="flex justify-end items-center gap-1">
+                      <span>¥</span>
+                      <input
+                        type="number"
+                        value={item.price}
+                        onChange={(e) => handleItemChange(item.id, 'price', Number(e.target.value))}
+                        className="w-24 text-right bg-transparent outline-none border-b border-transparent hover:border-blue-300 focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                  </td>
+                  <td className="p-2 text-right font-medium">
+                    {formatCurrency(item.price * item.quantity)}
+                  </td>
+                  <td className="p-2 print:hidden text-center">
+                    <button 
+                      onClick={() => removeItem(item.id)}
+                      className="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      title="削除"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* 行追加ボタン (PC用・印刷時非表示) */}
+          <div className="mb-8 print:hidden">
+            <button 
+              onClick={addItem}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
+            >
+              <Plus size={18} />
+              明細行を追加
+            </button>
+          </div>
+        </div>
+
+
+        {/* 合計計算エリア */}
+        <div className="flex flex-col md:flex-row justify-end mb-8 md:mb-12">
+          <div className="w-full md:w-1/2 max-w-xs space-y-2 ml-auto">
+            <div className="flex justify-between text-sm">
+              <span>小計 (税抜)</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            <div className="flex justify-between items-center text-sm">
+              <div className="flex items-center gap-2">
+                <span>消費税</span>
+                <select 
+                  className="bg-gray-100 text-xs rounded p-1 outline-none print:appearance-none print:bg-transparent"
+                  value={invoiceData.taxRate}
+                  onChange={(e) => setInvoiceData({...invoiceData, taxRate: Number(e.target.value)})}
+                >
+                  <option value={10}>(10%)</option>
+                  <option value={8}>(8%)</option>
+                  <option value={0}>(0%)</option>
+                </select>
+              </div>
+              <span>{formatCurrency(taxAmount)}</span>
+            </div>
+            <div className="flex justify-between text-lg font-bold border-t-2 border-gray-800 pt-2">
+              <span>合計金額 (税込)</span>
+              <span>{formatCurrency(totalAmount)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 備考・振込先 (スマホでは縦並び) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm break-inside-avoid">
+           <div>
+            <h3 className="font-bold border-b border-gray-400 mb-2 pb-1">備考</h3>
+            <textarea
+              name="notes"
+              value={invoiceData.notes}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded"
+            />
+          </div>
+          <div>
+            <h3 className="font-bold border-b border-gray-400 mb-2 pb-1">お振込先</h3>
+            <textarea
+              name="bankInfo"
+              value={invoiceData.bankInfo}
+              onChange={handleInputChange}
+              rows={4}
+              className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded"
+            />
+          </div>
+        </div>
+
+      </div>
+      
+      {/* フッター説明 (印刷時非表示) */}
+      <div className="max-w-[210mm] mx-auto mt-4 text-center text-gray-500 text-xs print:hidden mb-20 md:mb-0">
+        <p>※ 入力内容は自動保存されません。必ずPDF保存してください。</p>
+        <p className="md:hidden mt-2">※ スマホ表示ではレイアウトが最適化されていますが、<br/>PDF保存時には正式なA4レイアウトで出力されます。</p>
+      </div>
+    </div>
+  );
+};
+
+export default InvoiceApp;
