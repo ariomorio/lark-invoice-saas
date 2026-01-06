@@ -445,27 +445,31 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                 </div>
 
                 {/* 備考・振込先 (PC/Mobile共通) */}
-                <div className="grid md:grid-cols-2 gap-8 mt-4">
+                {/* 備考・振込先 (PC/Mobile共通) - PDFのレイアウトに合わせて縦積みに変更 */}
+                <div className="mt-4 space-y-4">
+                    <h3 className="font-bold border-b border-gray-400 mb-2 pb-1 text-sm text-gray-600">備考</h3>
+
                     <div className="space-y-1">
-                        <h3 className="font-bold border-b border-gray-400 mb-2 pb-1 text-sm text-gray-600">備考</h3>
-                        <textarea
-                            name="notes"
-                            value={invoiceData.notes}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="備考事項を入力してください"
-                            className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <h3 className="font-bold border-b border-gray-400 mb-2 pb-1 text-sm text-gray-600">振込先情報</h3>
+                        <label className="text-xs text-gray-500 font-bold">振込先情報</label>
                         <textarea
                             name="issuerBankInfo"
                             value={invoiceData.issuerBankInfo}
                             onChange={handleInputChange}
-                            rows={4}
+                            rows={3}
                             placeholder="振込先情報を入力してください"
-                            className="w-full bg-transparent border-none resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
+                            className="w-full bg-transparent border border-gray-200 resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs text-gray-500 font-bold">その他備考</label>
+                        <textarea
+                            name="notes"
+                            value={invoiceData.notes}
+                            onChange={handleInputChange}
+                            rows={3}
+                            placeholder="備考事項を入力してください"
+                            className="w-full bg-transparent border border-gray-200 resize-none outline-none hover:bg-gray-50 focus:bg-blue-50 rounded text-sm p-2"
                         />
                     </div>
                 </div>

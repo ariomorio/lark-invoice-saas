@@ -180,7 +180,9 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
             text.includes('処理を中断しました') ||
             text.includes('新しく請求書を作成する場合は') ||
             text.includes('請求書の下書きを作成しました') ||
-            text.includes('発行者を選択してください')) {
+            text.includes('発行者を選択してください') ||
+            text.includes('請求書PDFを送信しました') ||
+            text.includes('処理を完了します')) {
             console.log('Ignoring system/bot message');
             return;
         }
