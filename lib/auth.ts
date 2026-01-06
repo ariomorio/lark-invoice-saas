@@ -88,7 +88,9 @@ export const auth = betterAuth({
 /**
  * Export auth handlers for API routes
  */
-export const { GET, POST } = auth.handler;
+export const handler = auth.handler;
+export const GET = handler;
+export const POST = handler;
 
 /**
  * Type-safe auth instance
