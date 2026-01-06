@@ -25,7 +25,7 @@ export async function createConversationState(
     messageId: string,
     state: string,
     data: any,
-    expiresInMinutes: number = 5
+    expiresInMinutes: number = 30
 ): Promise<string> {
     const id = randomUUID();
     const now = Math.floor(Date.now() / 1000);

@@ -167,6 +167,16 @@ async function handleTextMessage(chatId: string, messageId: string, message: any
             return;
         }
 
+        // Ignore timeout messages and bot's own messages
+        if (text.includes('一定時間操作がなかったため') ||
+            text.includes('処理を中断しました') ||
+            text.includes('新しく請求書を作成する場合は') ||
+            text.includes('請求書の下書きを作成しました') ||
+            text.includes('発行者を選択してください')) {
+            console.log('Ignoring system/bot message');
+            return;
+        }
+
         // 1. Check conversation state
         const state = await getConversationStateByChatId(chatId);
 

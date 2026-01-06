@@ -28,6 +28,7 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
         issuerPostalCode: initialData.issuer.postalCode || '',
         issuerPhone: initialData.issuer.phone || '',
         issuerEmail: initialData.issuer.email || '',
+        issuerBankInfo: initialData.issuer.bankInfo || '',
         notes: initialData.notes || '',
     });
 
@@ -109,6 +110,7 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                     postalCode: invoiceData.issuerPostalCode,
                     phone: invoiceData.issuerPhone,
                     email: invoiceData.issuerEmail,
+                    bankInfo: invoiceData.issuerBankInfo,
                 },
                 items,
                 subtotal,
@@ -276,11 +278,19 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                             className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right"
                         />
                         <input
-                            type="text"
-                            name="issuerPhone"
-                            value={invoiceData.issuerPhone}
+                            type="email"
+                            name="issuerEmail"
+                            value={invoiceData.issuerEmail}
                             onChange={handleInputChange}
                             className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right"
+                        />
+                        <textarea
+                            name="issuerBankInfo"
+                            value={invoiceData.issuerBankInfo}
+                            onChange={handleInputChange}
+                            placeholder="振込先情報"
+                            rows={2}
+                            className="text-sm w-full bg-transparent hover:bg-gray-50 focus:bg-blue-50 outline-none rounded text-left md:text-right resize-none"
                         />
                     </div>
                 </div>
