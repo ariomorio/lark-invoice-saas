@@ -148,7 +148,9 @@ async function handleMessageReceived(event: any) {
         // Limit cache size
         if (processedMessages.size > MAX_CACHE_SIZE) {
             const firstItem = processedMessages.values().next().value;
-            processedMessages.delete(firstItem);
+            if (firstItem) {
+                processedMessages.delete(firstItem);
+            }
         }
 
         // Handle different message types
