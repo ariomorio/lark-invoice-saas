@@ -72,10 +72,11 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
         const newItems = [...items];
         newItems[index] = { ...newItems[index], [field]: value };
 
-        // 金額を再計算
+        // 金額を再計算（amountフィールド直接変更の場合は再計算しない）
         if (field === 'quantity' || field === 'unitPrice') {
             newItems[index].amount = newItems[index].quantity * newItems[index].unitPrice;
         }
+        // amountフィールドが直接変更された場合は、その値をそのまま使用（マイナス金額対応）
 
         setItems(newItems);
     };
@@ -341,7 +342,12 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                                 </div>
                                 <div className="text-right pt-2 border-t border-gray-200">
                                     <span className="text-xs text-gray-500 mr-2">小計:</span>
-                                    <span className="font-bold">{formatCurrency(item.amount)}</span>
+                                    <input
+                                        type="number"
+                                        value={item.amount}
+                                        onChange={(e) => handleItemChange(index, 'amount', Number(e.target.value))}
+                                        className="w-24 text-right bg-white p-1 rounded border border-gray-300 outline-none focus:border-blue-500 font-bold"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -399,7 +405,15 @@ export default function InvoiceEditor({ initialData, invoiceId }: InvoiceEditorP
                                         </div>
                                     </td>
                                     <td className="p-2 text-right font-medium">
-                                        {formatCurrency(item.amount)}
+                                        <div className="flex justify-end items-center gap-1">
+                                            <span>¥</span>
+                                            <input
+                                                type="number"
+                                                value={item.amount}
+                                                onChange={(e) => handleItemChange(index, 'amount', Number(e.target.value))}
+                                                className="w-24 text-right bg-transparent outline-none border-b border-transparent hover:border-blue-300 focus:border-blue-500 transition-colors"
+                                            />
+                                        </div>
                                     </td>
                                     <td className="p-2 text-center">
                                         <button
