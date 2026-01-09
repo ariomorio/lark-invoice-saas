@@ -196,10 +196,49 @@ export async function extractInvoiceFromText(text: string): Promise<InvoiceData>
         // Strategy 3: Fix unterminated strings and add missing brackets
         () => {
             let fixed = jsonString
-                .replace(/,([\s]*[}\]])/g, '$1') // Remove trailing commas
-                .replace(/"([^"]*?)$/gm, '"$1"'); // Fix unterminated strings
+                .replace(/,([\s]*[}\]])/g, '$1'); // Remove trailing commas
+
+            // Fix unterminated strings (add closing quote before newline or end)
+            // This regex finds strings that start with " but don't have a closing "
+            fixed = fixed.replace(/"([^"]*?)$/gm, '"$1"');
 
             // Add missing closing brackets
+            const openBraces = (fixed.match(/\{/g) || []).length;
+            const closeBraces = (fixed.match(/\}/g) || []).length;
+            const openBrackets = (fixed.match(/\[/g) || []).length;
+            const closeBrackets = (fixed.match(/\]/g) || []).length;
+
+            for (let i = 0; i < openBrackets - closeBrackets; i++) {
+                fixed += ']';
+            }
+            for (let i = 0; i < openBraces - closeBraces; i++) {
+                fixed += '}';
+            }
+
+            return JSON.parse(fixed);
+        },
+
+        // Strategy 4: More aggressive string fixing
+        () => {
+            let fixed = jsonString;
+
+            // Remove trailing commas
+            fixed = fixed.replace(/,([\s]*[}\]])/g, '$1');
+
+            // Fix unterminated strings by adding closing quotes before newlines
+            const lines = fixed.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                // Count quotes in the line
+                const quoteCount = (line.match(/"/g) || []).length;
+                // If odd number of quotes, add a closing quote at the end
+                if (quoteCount % 2 !== 0 && !line.trim().endsWith('"')) {
+                    lines[i] = line + '"';
+                }
+            }
+            fixed = lines.join('\n');
+
+            // Balance brackets
             const openBraces = (fixed.match(/\{/g) || []).length;
             const closeBraces = (fixed.match(/\}/g) || []).length;
             const openBrackets = (fixed.match(/\[/g) || []).length;
