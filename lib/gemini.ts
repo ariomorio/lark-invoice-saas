@@ -82,23 +82,45 @@ function getDefaultIssuerInfo() {
 /**
  * System prompt for invoice extraction
  */
-const getInvoiceExtractionPrompt = () => {
-    return `あなたは請求書作成アシスタントです。
-ユーザーからの入力（テキスト、画像、音声）から請求書に必要な情報を抽出し、JSON形式で返してください。
+function getInvoiceExtractionPrompt(): string {
+    return `以下のテキストから請求書情報を抽出し、JSON形式で返してください。
 
-必ず以下のJSON形式で返してください（他の説明は不要です）：
+【重要な抽出ルール】
+1. **明細行の抽出**:
+   - テキスト内の表（テーブル）形式のデータは、各行を個別の明細（items）として抽出してください
+   - 「品目」「内容」「品名」などの列から品目名を取得
+   - 「単価」「価格」などの列から単価を取得
+   - 「数量」列から数量を取得
+   - 「金額」「小計」などの列から金額を取得
+   - 表の各行（ヘッダー行と合計行を除く）を1つの明細として扱ってください
 
+2. **金額の扱い**:
+   - 単価（unitPrice）は必ず「税抜金額」として抽出してください
+   - もし入力が「税込」と明記されている場合、または税込と推測される場合は、1.1で割って税抜金額を算出してください
+   - 金額から「¥」「,」などの記号を除去し、数値のみを抽出してください
+   - 各明細の金額（amount）= 単価（unitPrice）× 数量（quantity）として計算してください
+
+3. **日付の形式**:
+   - 日付は必ずYYYY-MM-DD形式に変換してください（例: 2025-12-31）
+   - 「2025年12月31日」→「2025-12-31」
+
+4. **その他**:
+   - 発行者情報（issuer）は空文字列のままにしてください
+   - 情報がない項目は空文字列または0を設定してください
+
+【出力JSON形式】
 {
-  "invoiceNumber": "請求書番号または空文字列",
-  "issueDate": "YYYY-MM-DD形式の日付",
-  "dueDate": "YYYY-MM-DD形式の日付または空文字列",
+  "invoiceNumber": "請求書番号（なければ空文字列）",
+  "issueDate": "発行日（YYYY-MM-DD形式）",
+  "dueDate": "支払期限（YYYY-MM-DD形式）",
   "recipient": {
-    "name": "宛先名",
-    "address": "住所または空文字列",
-    "postalCode": "郵便番号または空文字列"
+    "name": "請求先の会社名または個人名",
+    "address": "請求先の住所",
+    "postalCode": "郵便番号（ハイフンなし、例: 1500042）"
   },
   "issuer": {
     "name": "",
+    "company": "",
     "address": "",
     "postalCode": "",
     "phone": "",
@@ -107,27 +129,23 @@ const getInvoiceExtractionPrompt = () => {
   },
   "items": [
     {
-      "description": "品目名",
-      "quantity": 1,
-      "unitPrice": 0,
-      "amount": 0
+      "description": "品目名・内容",
+      "quantity": 数量（数値）,
+      "unitPrice": 税抜単価（数値）,
+      "amount": 税抜金額（数値、unitPrice × quantity）
     }
   ],
   "subtotal": 0,
   "tax": 0,
   "total": 0,
-  "notes": ""
+  "notes": "備考（なければ空文字列）"
 }
 
-重要な注意事項：
-- 日付は必ずYYYY-MM-DD形式（例: 2023-10-27）
-- 金額は数値型（カンマなし）
-- 単価（unitPrice）は必ず「税抜金額」にする。入力が「税込」の場合は、1.1で割って税抜金額を算出する
-- 発行日が不明な場合は今日の日付
-- 発行者情報（issuer）は必ず空文字列のまま
-- 情報がない項目は空文字列または0
-- 必ず有効なJSONのみを返す（説明文は不要）`;
-};
+【入力テキスト】
+以下のテキストから上記ルールに従って情報を抽出してください。特に表形式のデータがある場合は、各行を個別の明細として抽出してください。
+
+必ず有効なJSONのみを返してください（説明文は不要）。`;
+}
 
 /**
  * Extract invoice data from text using Gemini API
