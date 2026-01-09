@@ -172,14 +172,27 @@ export async function extractInvoiceFromText(text: string): Promise<InvoiceData>
 
     // Extract JSON from response
     const generatedText = data.candidates[0].content.parts[0].text;
+    console.log('Gemini response length:', generatedText.length);
+    console.log('Gemini response preview:', generatedText.substring(0, 200));
 
     // Remove markdown code blocks if present
     let cleanedText = generatedText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
+    // Try to find JSON object
     let jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+
+    // If no complete JSON found, try to extract from opening brace to end
+    if (!jsonMatch) {
+        const startIndex = cleanedText.indexOf('{');
+        if (startIndex !== -1) {
+            jsonMatch = [cleanedText.substring(startIndex)];
+            console.log('Extracted incomplete JSON from position', startIndex);
+        }
+    }
 
     if (!jsonMatch) {
         console.error('Failed to extract JSON. Generated text:', generatedText);
+        console.error('Cleaned text:', cleanedText);
         throw new Error('Failed to extract JSON from Gemini response');
     }
 
